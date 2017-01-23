@@ -29,12 +29,13 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import java.sql.Statement;
 
 import com.rssaggregatorserver.exceptions.CustomBadRequestException;
+import com.rssaggregatorserver.exceptions.CustomInternalServerError;
 import com.rssaggregatorserver.exceptions.CustomNotFoundException;
 import com.rssaggregatorserver.bdd.DatabaseManager;
 import com.rssaggregatorserver.entities.Errors;
 import com.rssaggregatorserver.enums.ErrorStrings;
 
-@Path("/auth/")
+@Path("/auth")
 public class AuthServices {
 	
 	@POST
@@ -59,7 +60,7 @@ public class AuthServices {
 		{
 			String tmpMsg = request.email == null ? ErrorStrings.MISSING_EMAIL : ErrorStrings.MISSING_PASS;
 			
-			tmpMsg = createJSONErrorResponse(tmpMsg);
+			tmpMsg = Errors.createJSONErrorResponse(tmpMsg);
 			throw new CustomBadRequestException(tmpMsg);
 		}
 		
@@ -91,14 +92,14 @@ public class AuthServices {
 			{
 				String tmpMsg = ErrorStrings.CRITICAL_ERROR;
 				
-				tmpMsg = createJSONErrorResponse(tmpMsg);
-				throw new CustomBadRequestException(tmpMsg); // A changer, c'est pas uen bad request c'est une server error
+				tmpMsg = Errors.createJSONErrorResponse(tmpMsg);
+				throw new CustomInternalServerError(tmpMsg);
 			}
 			else if (tokens.size() == 0)
 			{
 				String tmpMsg = ErrorStrings.UNKNOWN_USER;
 				
-				tmpMsg = createJSONErrorResponse(tmpMsg);
+				tmpMsg = Errors.createJSONErrorResponse(tmpMsg);
 				throw new CustomNotFoundException(tmpMsg);
 			}
 			
@@ -117,26 +118,6 @@ public class AuthServices {
 			database.Disconnect();
 		}
 		return (Response.ok().entity(createJSONAuthResponse(response)).type(MediaType.APPLICATION_JSON).build());
-	}
-	
-	
-	
-	
-	String createJSONErrorResponse(String message)
-	{
-		String tmp = "";
-		Errors error = new Errors(message);
-		System.out.println(error.toString());
-		ObjectMapper mapper = new ObjectMapper();
-		
-		try {
-			mapper.enable(SerializationFeature.INDENT_OUTPUT);
-			tmp = mapper.writeValueAsString(error);
-		} catch (JsonProcessingException e) {
-			tmp = "{ \"status\":\"error\", \"error\":\"An error has occured !\"}";
-		}
-		
-		return (tmp);
 	}
 	
 	String createJSONAuthResponse(AuthResponse response)

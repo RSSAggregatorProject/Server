@@ -10,7 +10,7 @@ import com.rssaggregatorserver.enums.DatabaseStrings;
 
 public class DatabaseManager {
 	
-	public static Connection connection;
+	public Connection connection;
 	
 	private DatabaseManager() 
 	{
@@ -30,7 +30,7 @@ public class DatabaseManager {
 		return INSTANCE;
 	}
 
-	public static void Disconnect()
+	public void Disconnect()
 	{
 		if (connection != null)
 		{
@@ -40,7 +40,7 @@ public class DatabaseManager {
 		}
 	}
 	
-	public static void Connect() throws SQLException
+	public void Connect() throws SQLException
 	{
 		String url = DatabaseStrings.DATABASE_URL;
 		String user = DatabaseStrings.DATABASE_USER;
