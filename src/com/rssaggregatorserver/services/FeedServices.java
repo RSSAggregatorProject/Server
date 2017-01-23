@@ -12,6 +12,10 @@ import javax.ws.rs.core.Response;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.rssaggregatorserver.entities.Errors;
+import com.rssaggregatorserver.enums.ErrorStrings;
+import com.rssaggregatorserver.exceptions.CustomBadRequestException;
 import com.rssaggregatorserver.filters.Secured;
 
 @Path("/feeds")
@@ -28,11 +32,12 @@ public class FeedServices {
 		FeedPostRequest request = null;
 		try {
 			 request = mapper.readValue(s, FeedPostRequest.class);
+			 mapper.enable(SerializationFeature.INDENT_OUTPUT);
+			 System.out.println(request);
 				
-				
-		} catch (JsonParseException e) {e.printStackTrace(); }
-		catch (JsonMappingException e) {e.printStackTrace(); }
-		catch (IOException e) {e.printStackTrace(); }
+		} catch (JsonParseException e) {throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
+		catch (JsonMappingException e) {throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
+		catch (IOException e) {throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
 		
 		
 		return (null);

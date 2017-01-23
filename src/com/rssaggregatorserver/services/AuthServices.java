@@ -1,38 +1,41 @@
 package com.rssaggregatorserver.services;
 
 import java.io.IOException;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
+import java.util.ArrayList;
+
+import java.util.List;
+import java.util.Random;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.joda.time.DateTime;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
+
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationConfig;
+
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import java.sql.Statement;
+
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 
 import com.rssaggregatorserver.exceptions.CustomBadRequestException;
 import com.rssaggregatorserver.exceptions.CustomInternalServerError;
 import com.rssaggregatorserver.exceptions.CustomNotFoundException;
 import com.rssaggregatorserver.bdd.DatabaseManager;
 import com.rssaggregatorserver.entities.Errors;
+import com.rssaggregatorserver.entities.TokenEncode;
 import com.rssaggregatorserver.enums.ErrorStrings;
 
 @Path("/auth")
@@ -52,9 +55,9 @@ public class AuthServices {
 			System.out.println(request);
 			mapper.enable(SerializationFeature.INDENT_OUTPUT);
 			}
-		catch (JsonParseException e) {e.printStackTrace();}
-		catch (JsonMappingException e) {e.printStackTrace();}
-		catch (IOException e) {e.printStackTrace();}
+		catch (JsonParseException e) { throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
+		catch (JsonMappingException e) { throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
+		catch (IOException e) { throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
 		
 		if (request.password == null || request.email == null)
 		{
@@ -104,9 +107,26 @@ public class AuthServices {
 			}
 			
 			response.status = "success";
-			response.id_user = iDs.get(0).toString();
-			response.token = tokens.get(0);
-			response.exp_date = exp_dates.get(0);
+			response.id_user = iDs.get(0);
+			
+			Random gen = new Random();
+			
+			response.token = generateToken(response.id_user, request.email, gen.nextInt(15000), gen.nextInt(9000));
+			
+			DateTime dt = new DateTime();
+			dt = dt.plusHours(1);
+			Timestamp ts = new Timestamp(dt.getMillis());
+			
+			preparedStatement = database.connection.prepareStatement("UPDATE Users set exp_date=?, token=? WHERE id=?;");
+			preparedStatement.setString( 1, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(ts));
+			preparedStatement.setString( 2, response.token);
+			preparedStatement.setInt(3, response.id_user);
+			
+			int status = preparedStatement.executeUpdate();
+			if (status == 0)
+				throw new CustomInternalServerError(Errors.createJSONErrorResponse(ErrorStrings.DATABASE_ERROR_TOKEN));
+			
+			response.exp_date = ts.toString();
 			
 		} 
 		catch (SQLException e) {
@@ -134,12 +154,24 @@ public class AuthServices {
 		
 		return (tmp);
 	}
+	
+	private String generateToken(Integer id, String email, Integer firstRand, Integer lastRand)
+	{
+		String tmp = "";
+		
+		tmp = firstRand.toString() + "/" + id.toString() + "/" + email + "/" + lastRand.toString();
+		tmp = TokenEncode.Encode(tmp);
+		
+		System.out.println(tmp);
+		return (tmp);
+	}
+	
 }
 
 class AuthResponse
 {
 	String status;
-	String id_user;
+	int    id_user;
 	String token;
 	String exp_date;
 	
@@ -149,7 +181,7 @@ class AuthResponse
 		return (status);
 	}
 	
-	public String getId_user()
+	public int getId_user()
 	{
 		return (id_user);
 	}
@@ -168,7 +200,7 @@ class AuthResponse
 	{
 		this.status = status;
 	}
-	public void setId_user(String id_user)
+	public void setId_user(int id_user)
 	{
 		this.id_user = id_user;
 	}
