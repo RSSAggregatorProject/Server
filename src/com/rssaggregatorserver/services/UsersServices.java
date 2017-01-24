@@ -25,6 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.mysql.jdbc.Statement;
 import com.rssaggregatorserver.bdd.DatabaseManager;
 import com.rssaggregatorserver.entities.Errors;
 import com.rssaggregatorserver.entities.JSONUtils;
@@ -81,7 +82,7 @@ public class UsersServices {
 			if (emails.size() > 0)
 				throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.EMAIL_ALREADY_USED));
 			
-			statement = database.connection.prepareStatement("INSERT INTO Users (email, password, token, exp_date) VALUES (?, ?, ?, ?)");
+			statement = database.connection.prepareStatement("INSERT INTO Users (email, password, token, exp_date) VALUES (?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
 			statement.setString( 1, request.email );
 			statement.setString( 2, request.password );
 			statement.setString( 3, "chuck_norris");
@@ -91,21 +92,21 @@ public class UsersServices {
 			if (status == 0)
 				throw new CustomInternalServerError(Errors.createJSONErrorResponse(ErrorStrings.DATABASE_ERROR_REGISTRATION));
 			
+			int user_id = -1;
 			
-			statement = database.connection.prepareStatement("SELECT id FROM Users WHERE email=? AND password=?");
-			statement.setString( 1, request.email );
-			statement.setString( 2, request.password );
+			 try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+		            if (generatedKeys.next()) {
+		                user_id = (int)generatedKeys.getLong(1);
+		            }
+		            else {
+		                throw new SQLException("Creating user failed, no ID obtained.");
+		            }
+		        }
+				
+				if (user_id < 0)
+					throw new CustomInternalServerError(Errors.createJSONErrorResponse(ErrorStrings.DATABASE_ERROR_REGISTER_CATEGORIES));
 			
-			result = statement.executeQuery();
-			List<Integer> ids = new ArrayList<Integer>();
-			
-			while (result.next())
-				ids.add(result.getInt("id"));
-			
-			if (ids.size() != 1)
-				throw new CustomInternalServerError(Errors.createJSONErrorResponse(ErrorStrings.DATABASE_ERROR_REGISTRATION));
-			
-			response.id_user = ids.get(0);
+			response.id_user = user_id;
 			
 		} 
 		catch (SQLException e) {
