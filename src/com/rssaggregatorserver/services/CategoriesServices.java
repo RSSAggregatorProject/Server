@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -24,6 +25,7 @@ import com.mysql.jdbc.Statement;
 import com.rssaggregatorserver.bdd.DatabaseManager;
 import com.rssaggregatorserver.entities.Errors;
 import com.rssaggregatorserver.entities.JSONUtils;
+import com.rssaggregatorserver.entities.RSSTasks;
 import com.rssaggregatorserver.enums.ErrorStrings;
 import com.rssaggregatorserver.exceptions.CustomBadRequestException;
 import com.rssaggregatorserver.exceptions.CustomInternalServerError;
@@ -108,8 +110,184 @@ public class CategoriesServices {
 		return (Response.created(null).entity(JSONUtils.createJSONResponse(response)).type(MediaType.APPLICATION_JSON).build());
 	}
 	
+	@Secured
+	@GET
+	@Path("/")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getCategories(String s, @HeaderParam("Authorization") String header)
+	{
+		ObjectMapper mapper = new ObjectMapper();
+		CategoriesGetResponse response = new CategoriesGetResponse();
+		String token = header.substring("Bearer".length()).trim();
+		
+		int id_user  = JSONUtils.getUserIdFromAuthorizationHeader(token);
+		
+		if (id_user == -1)
+			throw new CustomInternalServerError(ErrorStrings.HEADER_PARSING_ERROR);
+		
+		DatabaseManager database = DatabaseManager.getInstance();
+		try { 
+			database.Connect();
+
+			PreparedStatement preparedStatement = database.connection.prepareStatement( "select Categories.name as cat_name, Categories.id as id_cat, "
+																						+ "feeds.id as id_feed, user_feed.name as feed_name  from Categories INNER JOIN user_feed, "
+																						+ "feeds WHERE user_feed.id_user = Categories.id_user AND user_feed.id_user = ? ORDER BY id_cat");
+
+			preparedStatement.setInt( 1, id_user );
+			ResultSet results = preparedStatement.executeQuery();
+			
+			
+			CategoriesFeedJSONData		feedData = null;
+			CategoriesJSONData			data = null;
+			
+			List<CategoriesJSONData>	lData = new ArrayList<CategoriesJSONData>();
+			List<CategoriesFeedJSONData>	lFeedData = new ArrayList<CategoriesFeedJSONData>();
+			
+			int i = -1;
+			while (results.next())
+			{
+				if (i != results.getInt("id_cat"))
+				{
+					if (data != null)
+					{
+						data.feeds = new CategoriesFeedJSONData[lFeedData.size()];
+						data.feeds = lFeedData.toArray(data.feeds);
+						lData.add(data);
+					}
+					
+					i = results.getInt("id_cat");
+					data = new CategoriesJSONData();
+					data.id_cat = i;
+					data.name = results.getString("cat_name");
+				}
+				
+				feedData = new CategoriesFeedJSONData();
+				
+				feedData.name = results.getString("feed_name");
+				feedData.favicon_uri = "favicon_not_implemented";
+				feedData.id_feed = results.getInt("id_feed");
+				
+				lFeedData.add(feedData);	
+			}
+			
+			// Ajouter la dernière entrée
+			data.feeds = new CategoriesFeedJSONData[lFeedData.size()];
+			data.feeds = lFeedData.toArray(data.feeds);
+			lData.add(data);
+			
+			response.data = new CategoriesJSONData[lData.size()];
+			response.data = lData.toArray(response.data);
+			
+		}
+		catch (SQLException e) {
+			// TODO Auto-generated catch block
+			throw new CustomInternalServerError(Errors.createJSONErrorResponse(e.toString()));
+		}
+		finally
+		{
+			database.Disconnect();
+		}
+		
+		response.status = "success";
+		
+		return (Response.ok().entity(JSONUtils.createJSONResponse(response)).type(MediaType.APPLICATION_JSON).build());
+	}
+	
 }
 
+
+class CategoriesFeedJSONData
+{
+	int 		id_feed;
+	String 		name;
+	String		favicon_uri;
+	
+	public int getId_feed(){
+		return (id_feed);
+	}	
+	
+	public String getName(){
+		return (name);
+	}
+	
+	public String getFavicon_uri(){
+		return (favicon_uri);
+	}
+	
+	public void setId_feed(int id)
+	{
+		id_feed = id;
+	}
+	
+	public void setName(String _name)
+	{
+		name = _name;
+	}
+	
+	public void setFavicon_uri(String _favicon)
+	{
+		favicon_uri = _favicon;
+	}
+}
+
+class CategoriesJSONData
+{
+	int 								id_cat;
+	String 								name;
+	//int 			unread;
+	CategoriesFeedJSONData[]			feeds;
+	
+	public int getId_cat(){
+		return (id_cat);
+	}	
+	
+	public String getName(){
+		return (name);
+	}
+	
+	public CategoriesFeedJSONData[] getFeeds(){
+		return (feeds);
+	}
+	
+	public void setId_cat(int id)
+	{
+		id_cat = id;
+	}
+	
+	public void setName(String _name)
+	{
+		name = _name;
+	}
+	
+	public void setFeeds(CategoriesFeedJSONData[] _feeds)
+	{
+		feeds = _feeds;
+	}
+}
+
+class CategoriesGetResponse
+{
+	String								status;
+	CategoriesJSONData[]				data;
+	
+	public String getStatus(){
+		return (status);
+	}
+	
+	public CategoriesJSONData[] getData(){
+		return (data);
+	}
+	
+	public void setStatus(String _status)
+	{
+		status = _status;
+	}
+	
+	public void setData(CategoriesJSONData[] _data)
+	{
+		data = _data;
+	}
+}
 
 class CategoriesPostResponse
 {
@@ -151,6 +329,7 @@ class CategoriesPostResponse
 	      return "CategoriesPostResponse [ status: "+ status +", id_cat: "+ id_cat + ", name: "+ name +" ]";
 	   }	
 }
+
 
 class CategoriesPostRequest
 {
