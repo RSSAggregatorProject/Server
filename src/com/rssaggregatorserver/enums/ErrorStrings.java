@@ -18,8 +18,14 @@ public class ErrorStrings {
 	
 	public static final String DATABASE_ERROR_TOKEN = "Cannot create token !";
 	public static final String DATABASE_ERROR_REGISTRATION = "Something append during registration !";
-	public static final String DATABASE_ERROR_REGISTER_CATEGORIES = "An error occured during categorie creation !";
+	public static final String DATABASE_ERROR_REGISTER_CATEGORIES = "An error occured during category creation !";
+	public static final String DATABASE_ERROR_REGISTER_FEEDS = "An error occured during feed creation !";
+	public static final String DATABASE_ERROR_REGISTER_ITEMS = "An error occured during item creation !";
 	
 	public static final String REQUEST_FORMAT_INVALID = "Request format is invalid !";
+	public static final String REQUEST_FEEDS_URI_MISSING = "You must specify feed's uri !";
+	
+	public static final String REQUEST_FEEDS_NAME_MISSING = "An empty name for a feed is not allowed !";
+	public static final String REQUEST_FEEDS_URI_INCORRECT = "Uri is invalid !";
 
 }
