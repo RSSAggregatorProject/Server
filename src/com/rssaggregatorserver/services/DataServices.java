@@ -72,6 +72,7 @@ public class DataServices {
 						query_feed_cat.setInt(1, i);
 					
 						ResultSet results_feed_cat = query_feed_cat.executeQuery();
+						int cat_unread = 0;
 						while (results_feed_cat.next())
 						{
 							feedData = null;
@@ -79,7 +80,7 @@ public class DataServices {
 
 							query.setInt( 1, results_feed_cat.getInt("id_feed"));
 							ResultSet results_feed = query.executeQuery();
-						
+							
 						
 							while (results_feed.next())
 							{
@@ -89,11 +90,13 @@ public class DataServices {
 								feedData.favicon_uri = "favicon_not_implemented";
 								feedData.id_feed = results_feed.getInt("id");
 								
+								
 								PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY date DESC");
 								
 								query_items.setInt(1, feedData.id_feed);
 							
 								ResultSet results_items = query_items.executeQuery();
+								int feed_unread = 0;
 								while (results_items.next())
 								{
 									itemData = null;
@@ -133,8 +136,12 @@ public class DataServices {
 										itemData.starred = false;
 									}
 									
+									if (itemData.read == false)
+										feed_unread++;
 									lItemsData.add(itemData);
 								}
+								feedData.unread = feed_unread;
+								cat_unread += feed_unread;
 								feedData.items = new DataItemsJSONData[lItemsData.size()];
 								feedData.items = lItemsData.toArray(feedData.items);
 								lFeedData.add(feedData);	
@@ -146,6 +153,7 @@ public class DataServices {
 						}
 						data.feeds = new DataFeedJSONData[lFeedData.size()];
 						data.feeds = lFeedData.toArray(data.feeds);
+						data.unread = cat_unread;
 						lData.add(data);
 						
 						lFeedData = new ArrayList<DataFeedJSONData>();
@@ -180,6 +188,7 @@ public class DataServices {
 		int 								id_feed;
 		String 								name;
 		String								favicon_uri;
+		int									unread;
 		DataItemsJSONData[]					items;
 		
 		public int getId_feed(){
@@ -198,9 +207,18 @@ public class DataServices {
 			return (items);
 		}
 		
+		public int getUnread(){
+			return (unread);
+		}	
+		
 		public void setId_feed(int id)
 		{
 			id_feed = id;
+		}
+		
+		public void setUnread(int nb)
+		{
+			unread = nb;
 		}
 		
 		public void setItems(DataItemsJSONData[] _items)
@@ -223,11 +241,15 @@ public class DataServices {
 	{
 		int 								id_cat;
 		String 								name;
-		//int 			unread;
+		int 								unread;
 		DataFeedJSONData[]					feeds;
 		
 		public int getId_cat(){
 			return (id_cat);
+		}	
+		
+		public int getUnread(){
+			return (unread);
 		}	
 		
 		public String getName(){
@@ -241,6 +263,11 @@ public class DataServices {
 		public void setId_cat(int id)
 		{
 			id_cat = id;
+		}
+		
+		public void setUnread(int nb)
+		{
+			unread = nb;
 		}
 		
 		public void setName(String _name)
