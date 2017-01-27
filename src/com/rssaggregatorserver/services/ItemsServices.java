@@ -9,6 +9,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -37,7 +38,7 @@ public class ItemsServices {
 	{
 		ObjectMapper mapper = new ObjectMapper();
 		ItemPutResponse response = new ItemPutResponse();
-		ItemPutRequest  request = null;
+		ItemsPutRequest  request = null;
 		
 		String token = header.trim();
 		int id_user  = JSONUtils.getUserIdFromAuthorizationHeader(token);
@@ -46,7 +47,7 @@ public class ItemsServices {
 			throw new CustomInternalServerError(ErrorStrings.HEADER_PARSING_ERROR);
 		
 		try {
-			 request = mapper.readValue(s, ItemPutRequest.class);
+			 request = mapper.readValue(s, ItemsPutRequest.class);
 			 mapper.enable(SerializationFeature.INDENT_OUTPUT);
 			 System.out.println(request.read);
 				
@@ -94,9 +95,96 @@ public class ItemsServices {
 		response.status = "success";
 		return (Response.ok().entity(JSONUtils.createJSONResponse(response)).type(MediaType.APPLICATION_JSON).build());
 	}
-}
 	
+	@PUT
+	@Secured	
+	@Path("/{item_id}")
+	@Produces(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response putItem(String s, @HeaderParam("Authorization") String header, @PathParam("item_id") int id_item)
+	{
+		ObjectMapper mapper = new ObjectMapper();
+		ItemPutResponse response = new ItemPutResponse();
+		ItemPutRequest  request = null;
+		
+		String token = header.trim();
+		int id_user  = JSONUtils.getUserIdFromAuthorizationHeader(token);
+		
+		if (id_user == -1)
+			throw new CustomInternalServerError(ErrorStrings.HEADER_PARSING_ERROR);
+		
+		try {
+			 request = mapper.readValue(s, ItemPutRequest.class);
+			 mapper.enable(SerializationFeature.INDENT_OUTPUT);
+			 System.out.println(request.read);
+				
+		} catch (JsonParseException e) {throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
+		catch (JsonMappingException e) {throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
+		catch (IOException e) {throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
+		
+		DatabaseManager database = DatabaseManager.getInstance();
+		try { 
+			database.Connect();
+
+			PreparedStatement feed_items_update = database.connection.prepareStatement( "SELECT * from user_items WHERE id_user = ? AND id_item = ?");
+			feed_items_update.setInt( 1, id_user);
+			feed_items_update.setInt( 2, id_item);
+				
+			ResultSet query = feed_items_update.executeQuery();
+			if (query.next())
+			{
+				PreparedStatement items_update = database.connection.prepareStatement( "UPDATE user_items set read_state = ?, starred = ? WHERE id_user = ? AND id_item = ?");
+				items_update.setBoolean( 1, request.read);
+				items_update.setBoolean( 2, request.starred);
+				items_update.setInt( 3, id_user);
+				items_update.setInt( 4, id_item);
+					
+				int status = items_update.executeUpdate();
+			}
+			else
+				throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_ITEMS_DOESNT_EXIST));
+			
+		}
+		catch (SQLException e) {
+			// TODO Auto-generated catch block
+			throw new CustomInternalServerError(Errors.createJSONErrorResponse(e.toString()));
+		}
+		finally
+		{
+			database.Disconnect();
+		}
+		
+		response.status = "success";
+		return (Response.ok().entity(JSONUtils.createJSONResponse(response)).type(MediaType.APPLICATION_JSON).build());
+	}
+}
+
 class ItemPutRequest
+{
+
+	boolean 	read;
+	boolean 	starred;
+	
+		public boolean getRead() {
+			return (read);
+		}
+		
+		
+		public void setRead(boolean _read) {
+			read = _read;
+		}
+		
+		public boolean getStarred() {
+			return (starred);
+		}
+		
+		
+		public void setStarred(boolean _starred) {
+			starred = _starred;
+		}	
+}
+
+class ItemsPutRequest
 
 {
 

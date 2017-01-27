@@ -25,6 +25,8 @@ public class ErrorStrings {
 	
 	public static final String REQUEST_FORMAT_INVALID = "Request format is invalid !";
 	
+	public static final String REQUEST_ITEMS_DOESNT_EXIST = "Users's item doesn't exist !";
+	
 	public static final String REQUEST_FEEDS_CAT_DOESNT_EXIST = "Users's categorie doesn't exist !";
 	public static final String REQUEST_FEEDS_ALREADY_EXIST = "Users's feed is already added to your workspace !";
 	public static final String REQUEST_FEEDS_DOESNT_EXIST = "Users's feed doesn't exist !";
