@@ -33,4 +33,5 @@ public class ErrorStrings {
 	public static final String REQUEST_FEEDS_NAME_MISSING = "An empty name for a feed is not allowed !";
 	public static final String REQUEST_FEEDS_URI_INCORRECT = "Uri is invalid !";
 
+	public static final String REQUEST_FEEDS_READ_STATE_MISSING = "You must specify read state !";
 }

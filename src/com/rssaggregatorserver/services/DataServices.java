@@ -89,7 +89,7 @@ public class DataServices {
 								feedData.favicon_uri = "favicon_not_implemented";
 								feedData.id_feed = results_feed.getInt("id");
 								
-								PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY id");
+								PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY date DESC");
 								
 								query_items.setInt(1, feedData.id_feed);
 							

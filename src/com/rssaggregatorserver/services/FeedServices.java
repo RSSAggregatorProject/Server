@@ -13,6 +13,7 @@ import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -235,7 +236,7 @@ public class FeedServices {
 						data.id_feed = i;
 						data.name = results.getString("name");
 						
-						PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY id");
+						PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY date DESC");
 						
 						query_items.setInt(1, i);
 					
@@ -352,7 +353,7 @@ public class FeedServices {
 						data.id_feed = i;
 						data.name = results.getString("name");
 						
-						PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY id");
+						PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY date DESC");
 						
 						query_items.setInt(1, i);
 					
@@ -456,7 +457,7 @@ public class FeedServices {
 						data.id_feed = i;
 						data.name = results.getString("name");
 						
-						PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY id");
+						PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY date DESC");
 						
 						query_items.setInt(1, i);
 					
@@ -567,6 +568,78 @@ public class FeedServices {
 				int status = feed_deletion.executeUpdate();
 				if (status == 0)
 					throw new CustomInternalServerError(Errors.createJSONErrorResponse(ErrorStrings.DATABASE_ERROR_FEED_DELETION));
+			}
+			else
+				throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FEEDS_DOESNT_EXIST));
+		}
+		catch (SQLException e) {
+			// TODO Auto-generated catch block
+			throw new CustomInternalServerError(Errors.createJSONErrorResponse(e.toString()));
+		}
+		finally
+		{
+			database.Disconnect();
+		}
+		
+		response.status = "success";
+		
+		return (Response.ok().entity(JSONUtils.createJSONResponse(response)).type(MediaType.APPLICATION_JSON).build());
+	}
+	
+	@PUT
+	@Secured	
+	@Path("/{feed_id}/items")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response changeItemsStateFeeds(String s, @HeaderParam("Authorization") String header, @PathParam("feed_id") int feed_id)
+	{
+		ObjectMapper mapper = new ObjectMapper();
+		FeedPutResponse response = new FeedPutResponse();
+		FeedPutRequest  request = null;
+		
+		String token = header.trim();
+		int id_user  = JSONUtils.getUserIdFromAuthorizationHeader(token);
+		
+		if (id_user == -1)
+			throw new CustomInternalServerError(ErrorStrings.HEADER_PARSING_ERROR);
+		
+		try {
+			 request = mapper.readValue(s, FeedPutRequest.class);
+			 mapper.enable(SerializationFeature.INDENT_OUTPUT);
+			 System.out.println(request);
+				
+		} catch (JsonParseException e) {throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
+		catch (JsonMappingException e) {throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
+		catch (IOException e) {throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FORMAT_INVALID)); }
+		
+		System.out.println("read : " + request.read);
+		
+		DatabaseManager database = DatabaseManager.getInstance();
+		try { 
+			database.Connect();
+
+			/* On vérifie si la catégorie est bien celle de l'utilisateur */
+			PreparedStatement feed_state = database.connection.prepareStatement( "SELECT id, name FROM user_feed WHERE id_user = ? AND id_feed = ?");
+			feed_state.setInt( 1, id_user );
+			feed_state.setInt( 2, feed_id );
+			
+			ResultSet feed_results = feed_state.executeQuery();
+			if (feed_results.next())
+			{
+				PreparedStatement feed_items_update = database.connection.prepareStatement( "SELECT * from items WHERE feed_id = ?");
+				feed_items_update.setInt( 1, feed_id );
+				
+				response.id_feed = feed_id;
+				response.name = feed_results.getString("name");
+				ResultSet query = feed_items_update.executeQuery();
+				while (query.next())
+				{
+					PreparedStatement items_update = database.connection.prepareStatement( "UPDATE user_items set read_state = ? WHERE id_user = ? AND id_item = ?");
+					items_update.setBoolean( 1, request.read);
+					items_update.setInt( 2, id_user );
+					items_update.setInt( 3, query.getInt("id"));
+					
+					int status = items_update.executeUpdate();
+				}
 			}
 			else
 				throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FEEDS_DOESNT_EXIST));
@@ -768,6 +841,52 @@ class FeedDeleteResponse
 	
 	public String getStatus() {
 		return (this.status);
+	}
+	
+}
+
+class FeedPutResponse
+{
+	String 	status;
+	String 	name;
+	int		id_feed; 
+	
+	public void setStatus(String status) {
+		this.status = status;
+	}
+	
+	public void setName(String _name) {
+		this.name = _name;
+	}
+	
+	public void setId_feed(int feed_id) {
+		this.id_feed = feed_id;
+	}
+	
+	public String getStatus() {
+		return (this.status);
+	}
+	
+	public String getName() {
+		return (this.name);
+	}
+	
+	public int getId_feed() {
+		return (this.id_feed);
+	}
+}
+
+class FeedPutRequest
+{
+	boolean 	read;
+	
+	public boolean getRead() {
+		return (read);
+	}
+	
+	
+	public void setRead(boolean _read) {
+		read = _read;
 	}
 	
 }
