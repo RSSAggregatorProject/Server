@@ -3,6 +3,7 @@ package com.rssaggregatorserver.services;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +32,7 @@ public class DataServices {
 	public Response getData(String s, @HeaderParam("Authorization") String header)
 	{
 		ObjectMapper mapper = new ObjectMapper();
-		CategoriesGetResponse response = new CategoriesGetResponse();
+		DataGetResponse response = new DataGetResponse();
 		String token = header.trim();
 		
 		int id_user  = JSONUtils.getUserIdFromAuthorizationHeader(token);
@@ -49,18 +50,20 @@ public class DataServices {
 			ResultSet results = preparedStatement.executeQuery();
 			
 			
-			CategoriesFeedJSONData		feedData = null;
-			CategoriesJSONData			data = null;
+			DataFeedJSONData					feedData = null;
+			DataCategoriesJSONData				data = null;
+			DataItemsJSONData					itemData = null;
 			
-			List<CategoriesJSONData>	lData = new ArrayList<CategoriesJSONData>();
-			List<CategoriesFeedJSONData>	lFeedData = new ArrayList<CategoriesFeedJSONData>();
+			List<DataCategoriesJSONData>		lData = new ArrayList<DataCategoriesJSONData>();
+			List<DataFeedJSONData>				lFeedData = new ArrayList<DataFeedJSONData>();
+			List<DataItemsJSONData>				lItemsData = new ArrayList<DataItemsJSONData>();
 			
 			int i = -1;
 			while (results.next())
 			{				
 						i = results.getInt("id");
 
-						data = new CategoriesJSONData();
+						data = new DataCategoriesJSONData();
 						data.id_cat = i;
 						data.name = results.getString("name");
 						
@@ -80,28 +83,78 @@ public class DataServices {
 						
 							while (results_feed.next())
 							{
-								feedData = new CategoriesFeedJSONData();
+								feedData = new DataFeedJSONData();
 						
 								feedData.name = results_feed.getString("name");
 								feedData.favicon_uri = "favicon_not_implemented";
 								feedData.id_feed = results_feed.getInt("id");
-						
+								
+								PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY id");
+								
+								query_items.setInt(1, feedData.id_feed);
+							
+								ResultSet results_items = query_items.executeQuery();
+								while (results_items.next())
+								{
+									itemData = null;
+									itemData = new DataItemsJSONData();
+									
+									itemData.id_item = results_items.getInt("id");
+									itemData.id_feed = results_items.getInt("feed_id");
+									itemData.title = results_items.getString("title");
+									itemData.description = results_items.getString("description");
+									itemData.link = results_items.getString("url");
+									itemData.pubDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(results_items.getTimestamp("date"));
+									
+									PreparedStatement query2 = database.connection.prepareStatement( "Select * from user_items WHERE id_item = ? AND id_user = ? ORDER BY id");
+
+									query2.setInt( 1, results_items.getInt("id"));
+									query2.setInt( 2, id_user);
+									ResultSet results_user_items = query2.executeQuery();
+									
+									if (results_user_items.next())
+									{
+										itemData.read = results_user_items.getBoolean("read_state");
+										itemData.starred = results_user_items.getBoolean("starred");
+									}
+									else
+									{
+										PreparedStatement query_user_items = database.connection.prepareStatement( "INSERT INTO user_items (id_user, id_item, read_state, starred)"
+																												 + " VALUES (?, ?, ?, ?)");
+
+										query_user_items.setInt( 1, id_user);
+										query_user_items.setInt( 2, results_items.getInt("id"));
+										query_user_items.setBoolean(3, false);
+										query_user_items.setBoolean(4, false);
+										
+										int status = query_user_items.executeUpdate();
+										
+										itemData.read = false;
+										itemData.starred = false;
+									}
+									
+									lItemsData.add(itemData);
+								}
+								feedData.items = new DataItemsJSONData[lItemsData.size()];
+								feedData.items = lItemsData.toArray(feedData.items);
 								lFeedData.add(feedData);	
+								
+								lItemsData = new ArrayList<DataItemsJSONData>();
 							}
 							
 
 						}
-						data.feeds = new CategoriesFeedJSONData[lFeedData.size()];
+						data.feeds = new DataFeedJSONData[lFeedData.size()];
 						data.feeds = lFeedData.toArray(data.feeds);
 						lData.add(data);
 						
-						lFeedData = new ArrayList<CategoriesFeedJSONData>();
+						lFeedData = new ArrayList<DataFeedJSONData>();
 			}
 			
 			if (i > 0)
 			{
 				
-				response.data = new CategoriesJSONData[lData.size()];
+				response.data = new DataCategoriesJSONData[lData.size()];
 				response.data = lData.toArray(response.data);
 
 			}
@@ -122,11 +175,12 @@ public class DataServices {
 		return (Response.ok().entity(JSONUtils.createJSONResponse(response)).type(MediaType.APPLICATION_JSON).build());
 	}
 	
-	class CategoriesFeedJSONData
+	class DataFeedJSONData
 	{
-		int 		id_feed;
-		String 		name;
-		String		favicon_uri;
+		int 								id_feed;
+		String 								name;
+		String								favicon_uri;
+		DataItemsJSONData[]					items;
 		
 		public int getId_feed(){
 			return (id_feed);
@@ -140,9 +194,18 @@ public class DataServices {
 			return (favicon_uri);
 		}
 		
+		public DataItemsJSONData[] getItems(){
+			return (items);
+		}
+		
 		public void setId_feed(int id)
 		{
 			id_feed = id;
+		}
+		
+		public void setItems(DataItemsJSONData[] _items)
+		{
+			items = _items;
 		}
 		
 		public void setName(String _name)
@@ -156,12 +219,12 @@ public class DataServices {
 		}
 	}
 
-	class CategoriesJSONData
+	class DataCategoriesJSONData
 	{
 		int 								id_cat;
 		String 								name;
 		//int 			unread;
-		CategoriesFeedJSONData[]			feeds;
+		DataFeedJSONData[]					feeds;
 		
 		public int getId_cat(){
 			return (id_cat);
@@ -171,7 +234,7 @@ public class DataServices {
 			return (name);
 		}
 		
-		public CategoriesFeedJSONData[] getFeeds(){
+		public DataFeedJSONData[] getFeeds(){
 			return (feeds);
 		}
 		
@@ -185,22 +248,106 @@ public class DataServices {
 			name = _name;
 		}
 		
-		public void setFeeds(CategoriesFeedJSONData[] _feeds)
+		public void setFeeds(DataFeedJSONData[] _feeds)
 		{
 			feeds = _feeds;
 		}
 	}
 
-	class CategoriesGetResponse
+	class DataItemsJSONData
 	{
-		String								status;
-		CategoriesJSONData[]				data;
+		int 		id_item;
+		String		title;
+		String		description;
+		String		pubDate;
+		String		link;
+		int			id_feed;
+		boolean		read;
+		boolean		starred;
+		
+		public int getId_item(){
+			return (id_item);
+		}	
+		
+		public String getTitle(){
+			return (title);
+		}
+		
+		public String getDescription(){
+			return (description);
+		}
+		
+		public String getPubDate(){
+			return (pubDate);
+		}
+		
+		public String getLink(){
+			return (link);
+		}
+		
+		public int getId_feed(){
+			return (id_feed);
+		}
+		
+		public boolean getRead(){
+			return (read);
+		}
+		
+		public boolean getStarred(){
+			return (starred);
+		}
+		
+		public void setId_item(int id)
+		{
+			id_item = id;
+		}
+		
+		public void setTitle(String _title)
+		{
+			title = _title;
+		}
+		
+		public void setDescription(String str)
+		{
+			description = str;
+		}
+		
+		public void setPubDate(String str)
+		{
+			pubDate = str;
+		}
+		
+		public void setLink(String str)
+		{
+			link = str;
+		}
+		
+		public void setId_feed(int id)
+		{
+			id_feed = id;
+		}
+		
+		public void setRead(boolean bool)
+		{
+			read = bool;
+		}
+		
+		public void setStarred(boolean bool)
+		{
+			starred = bool;
+		}
+	}
+	
+	class DataGetResponse
+	{
+		String									status;
+		DataCategoriesJSONData[]				data;
 		
 		public String getStatus(){
 			return (status);
 		}
 		
-		public CategoriesJSONData[] getData(){
+		public DataCategoriesJSONData[] getData(){
 			return (data);
 		}
 		
@@ -209,7 +356,7 @@ public class DataServices {
 			status = _status;
 		}
 		
-		public void setData(CategoriesJSONData[] _data)
+		public void setData(DataCategoriesJSONData[] _data)
 		{
 			data = _data;
 		}

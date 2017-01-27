@@ -176,6 +176,8 @@ public class FeedServices {
 				if (status == 0)
 					throw new CustomInternalServerError(Errors.createJSONErrorResponse(ErrorStrings.DATABASE_ERROR_REGISTER_FEEDS));
 			}
+			else
+				throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FEEDS_ALREADY_EXIST));
 			
 			response.id_feed = feed_id;
 		}
@@ -483,7 +485,21 @@ public class FeedServices {
 								itemData.starred = results_user_items.getBoolean("starred");
 								lItemsData.add(itemData);
 							}
-							
+							else
+							{
+								PreparedStatement query_user_items = database.connection.prepareStatement( "INSERT INTO user_items (id_user, id_item, read_state, starred)"
+																										 + " VALUES (?, ?, ?, ?)");
+
+								query_user_items.setInt( 1, id_user);
+								query_user_items.setInt( 2, results_items.getInt("id"));
+								query_user_items.setBoolean(3, false);
+								query_user_items.setBoolean(4, false);
+								
+								int status = query_user_items.executeUpdate();
+								
+								itemData.read = false;
+								itemData.starred = false;
+							}
 
 						}
 						data.items = new FeedItemsJSONData[lItemsData.size()];
