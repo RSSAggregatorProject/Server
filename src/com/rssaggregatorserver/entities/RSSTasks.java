@@ -34,7 +34,8 @@ public class RSSTasks {
 	
 	static void fillNewFeedsInDatabase(SyndEntry entry, int feed_id)
 	{
-
+		
+		
 		DatabaseManager database = DatabaseManager.getInstance();
 		
 		String title = entry.getTitle();
@@ -42,6 +43,7 @@ public class RSSTasks {
 		Date date = entry.getPublishedDate();
 		String desc = entry.getDescription().getValue();
 		
+		System.out.println("Adding Feeds : " + entry.getTitle() + " " + entry.getPublishedDate());
 		/*System.out.println("Title :" + entry.getTitle());
 		System.out.println("Url :" + entry.getLink());
 		System.out.println("Date :" + entry.getPublishedDate());
