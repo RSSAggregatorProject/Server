@@ -19,6 +19,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -112,24 +114,48 @@ public class AuthServices {
 			response.status = "success";
 			response.id_user = iDs.get(0);
 			
-			Random gen = new Random();
+			DateTime date = null;
+			DateTime dt = null;
+			PreparedStatement dateStatement = database.connection.prepareStatement("Select exp_date, token from Users WHERE id=?");
+			dateStatement.setInt( 1, iDs.get(0));
 			
-			response.token = generateToken(response.id_user, request.email, gen.nextInt(15000), gen.nextInt(9000));
+			ResultSet result_date = dateStatement.executeQuery();
+			if (result_date.next())
+			{
+				System.out.println("Here !");
+				DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+				date = formatter.parseDateTime(result_date.getString("exp_date"));
+				dt = new DateTime();
+			}
+		
 			
-			DateTime dt = new DateTime();
-			dt = dt.plusHours(1);
-			Timestamp ts = new Timestamp(dt.getMillis());
+			if (date == null || date.getMillis() < dt.getMillis())
+			{
 			
-			preparedStatement = database.connection.prepareStatement("UPDATE Users set exp_date=?, token=? WHERE id=?;");
-			preparedStatement.setString( 1, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(ts));
-			preparedStatement.setString( 2, response.token);
-			preparedStatement.setInt(3, response.id_user);
+				Random gen = new Random();
 			
-			int status = preparedStatement.executeUpdate();
-			if (status == 0)
-				throw new CustomInternalServerError(Errors.createJSONErrorResponse(ErrorStrings.DATABASE_ERROR_TOKEN));
+				response.token = generateToken(response.id_user, request.email, gen.nextInt(15000), gen.nextInt(9000));
 			
-			response.exp_date = ts.toString();
+				dt = new DateTime();
+				dt = dt.plusDays(1);
+				Timestamp ts = new Timestamp(dt.getMillis());
+			
+				preparedStatement = database.connection.prepareStatement("UPDATE Users set exp_date=?, token=? WHERE id=?;");
+				preparedStatement.setString( 1, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(ts));
+				preparedStatement.setString( 2, response.token);
+				preparedStatement.setInt(3, response.id_user);
+			
+				int status = preparedStatement.executeUpdate();
+				if (status == 0)
+					throw new CustomInternalServerError(Errors.createJSONErrorResponse(ErrorStrings.DATABASE_ERROR_TOKEN));
+				response.exp_date = ts.toString();
+				
+			}
+			else
+			{
+				response.exp_date = result_date.getString("exp_date");
+				response.token = result_date.getString("token");
+			}
 			
 		} 
 		catch (SQLException e) {

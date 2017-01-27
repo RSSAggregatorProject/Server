@@ -38,12 +38,12 @@ public class AuthentificationFilter implements ContainerRequestFilter{
 	{
 		String authHeader = context.getHeaderString(HttpHeaders.AUTHORIZATION);
 		
-		if (authHeader == null || !authHeader.startsWith("Bearer ")){
+		if (authHeader == null){
 			String tmp = Errors.createJSONErrorResponse(ErrorStrings.AUTH_NOT_PROVIDE);
 			throw new CustomNotAuthorizedException(tmp);
 		}
 		
-		String token = authHeader.substring("Bearer".length()).trim();
+		String token = authHeader.trim();
 
 		validAuthentification(token);
 		

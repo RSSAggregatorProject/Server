@@ -44,7 +44,7 @@ public class CategoriesServices {
 		ObjectMapper mapper = new ObjectMapper();
 		CategoriesPostResponse response = new CategoriesPostResponse();
 		CategoriesPostRequest request = null;
-		String token = header.substring("Bearer".length()).trim();
+		String token = header.trim();//.substring("Bearer".length()).trim();
 		
 		int id_user  = JSONUtils.getUserIdFromAuthorizationHeader(token);
 		
@@ -118,7 +118,7 @@ public class CategoriesServices {
 	{
 		ObjectMapper mapper = new ObjectMapper();
 		CategoriesGetResponse response = new CategoriesGetResponse();
-		String token = header.substring("Bearer".length()).trim();
+		String token = header.trim();
 		
 		int id_user  = JSONUtils.getUserIdFromAuthorizationHeader(token);
 		
@@ -129,9 +129,7 @@ public class CategoriesServices {
 		try { 
 			database.Connect();
 
-			PreparedStatement preparedStatement = database.connection.prepareStatement( "select Categories.name as cat_name, Categories.id as id_cat, "
-																						+ "feeds.id as id_feed, user_feed.name as feed_name  from Categories INNER JOIN user_feed, "
-																						+ "feeds WHERE user_feed.id_user = Categories.id_user AND user_feed.id_user = ? ORDER BY id_cat");
+			PreparedStatement preparedStatement = database.connection.prepareStatement( "Select * from Categories WHERE id_user = ? ORDER BY id");
 
 			preparedStatement.setInt( 1, id_user );
 			ResultSet results = preparedStatement.executeQuery();
@@ -145,43 +143,60 @@ public class CategoriesServices {
 			
 			int i = -1;
 			while (results.next())
-			{
-				if (i != results.getInt("id_cat"))
-				{
-					if (data != null)
-					{
+			{				
+						i = results.getInt("id");
+
+						data = new CategoriesJSONData();
+						data.id_cat = i;
+						data.name = results.getString("name");
+						
+						PreparedStatement query_feed_cat = database.connection.prepareStatement( "Select id_feed from user_feed WHERE id_cat = ? ORDER BY id");
+						
+						query_feed_cat.setInt(1, i);
+					
+						ResultSet results_feed_cat = query_feed_cat.executeQuery();
+						while (results_feed_cat.next())
+						{
+							feedData = null;
+							PreparedStatement query = database.connection.prepareStatement( "Select * from feeds WHERE id = ? ORDER BY id");
+
+							query.setInt( 1, results_feed_cat.getInt("id_feed"));
+							ResultSet results_feed = query.executeQuery();
+						
+						
+							while (results_feed.next())
+							{
+								feedData = new CategoriesFeedJSONData();
+						
+								feedData.name = results_feed.getString("name");
+								feedData.favicon_uri = "favicon_not_implemented";
+								feedData.id_feed = results_feed.getInt("id");
+						
+								lFeedData.add(feedData);	
+							}
+							
+
+						}
 						data.feeds = new CategoriesFeedJSONData[lFeedData.size()];
 						data.feeds = lFeedData.toArray(data.feeds);
 						lData.add(data);
-					}
-					
-					i = results.getInt("id_cat");
-					data = new CategoriesJSONData();
-					data.id_cat = i;
-					data.name = results.getString("cat_name");
-				}
-				
-				feedData = new CategoriesFeedJSONData();
-				
-				feedData.name = results.getString("feed_name");
-				feedData.favicon_uri = "favicon_not_implemented";
-				feedData.id_feed = results.getInt("id_feed");
-				
-				lFeedData.add(feedData);	
+						
+						lFeedData = new ArrayList<CategoriesFeedJSONData>();
 			}
 			
-			// Ajouter la dernière entrée
-			data.feeds = new CategoriesFeedJSONData[lFeedData.size()];
-			data.feeds = lFeedData.toArray(data.feeds);
-			lData.add(data);
+			if (i > 0)
+			{
+				
+				response.data = new CategoriesJSONData[lData.size()];
+				response.data = lData.toArray(response.data);
+
+			}
 			
-			response.data = new CategoriesJSONData[lData.size()];
-			response.data = lData.toArray(response.data);
 			
 		}
 		catch (SQLException e) {
 			// TODO Auto-generated catch block
-			throw new CustomInternalServerError(Errors.createJSONErrorResponse(e.toString()));
+			throw new CustomInternalServerError(Errors.createJSONErrorResponse(e.getMessage()));
 		}
 		finally
 		{
@@ -287,6 +302,11 @@ class CategoriesGetResponse
 	{
 		data = _data;
 	}
+	
+	public String toString(){
+	      return "CategoriesGetResponse [ status: "+ status +
+	    		  				", data: "+ data + "]";
+	   }	
 }
 
 class CategoriesPostResponse

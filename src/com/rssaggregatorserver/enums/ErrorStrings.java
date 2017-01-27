@@ -23,6 +23,8 @@ public class ErrorStrings {
 	public static final String DATABASE_ERROR_REGISTER_ITEMS = "An error occured during item creation !";
 	
 	public static final String REQUEST_FORMAT_INVALID = "Request format is invalid !";
+	
+	public static final String REQUEST_FEEDS_CAT_DOESNT_EXIST = "Users's categorie doesn't exist !";
 	public static final String REQUEST_FEEDS_URI_MISSING = "You must specify feed's uri !";
 	
 	public static final String REQUEST_FEEDS_NAME_MISSING = "An empty name for a feed is not allowed !";

@@ -27,6 +27,7 @@ import com.rssaggregatorserver.entities.RSSTasks;
 import com.rssaggregatorserver.enums.ErrorStrings;
 import com.rssaggregatorserver.exceptions.CustomBadRequestException;
 import com.rssaggregatorserver.exceptions.CustomInternalServerError;
+import com.rssaggregatorserver.exceptions.CustomNotAuthorizedException;
 import com.rssaggregatorserver.filters.Secured;
 
 @Path("/feeds")
@@ -43,8 +44,9 @@ public class FeedServices {
 		FeedPostRequest request = null;
 		FeedPostResponse response = new FeedPostResponse();
 		
-		String token = header.substring("Bearer".length()).trim();
+		String token = header.trim();
 		int id_user  = JSONUtils.getUserIdFromAuthorizationHeader(token);
+		String feed_name = "";
 		
 		if (id_user == -1)
 			throw new CustomInternalServerError(ErrorStrings.HEADER_PARSING_ERROR);
@@ -61,13 +63,23 @@ public class FeedServices {
 		
 		if (request.uri == null)
 			Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FEEDS_URI_MISSING);
-		if (request.name == null)
-			Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FEEDS_URI_MISSING);
+		
+		/*if (request.name == null)
+			Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FEEDS_URI_MISSING);*/
 			
 		DatabaseManager database = DatabaseManager.getInstance();
 		try { 
 			database.Connect();
 
+			/* On vérifie si la catégorie est bien celle de l'utilisateur */
+			PreparedStatement cat_state = database.connection.prepareStatement( "SELECT id FROM Categories WHERE id_user = ? AND id = ?");
+			cat_state.setInt( 1, id_user );
+			cat_state.setInt( 2, request.id_cat );
+			
+			ResultSet cat_results = cat_state.executeQuery();
+			if (!cat_results.next())
+				throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FEEDS_CAT_DOESNT_EXIST));
+			
 			PreparedStatement preparedStatement = database.connection.prepareStatement( "SELECT * FROM feeds WHERE feed_link = ?");
 
 			preparedStatement.setString( 1, request.uri );
@@ -78,12 +90,14 @@ public class FeedServices {
 			ResultSet result = preparedStatement.executeQuery();
 			
 			List<String> uris = new ArrayList<String>();
+			List<String> names = new ArrayList<String>();
 			List<Integer> iDs = new ArrayList<Integer>();
 			
 			while (result.next())
 			{
 				uris.add(result.getString("feed_link"));
 				iDs.add(result.getInt("id"));
+				names.add(result.getString("name"));
 			}
 
 			/* Si le feed n'est pas dans la base de données ont le créer.
@@ -98,9 +112,11 @@ public class FeedServices {
 				if (!RSSTasks.readFeedUrl(request.uri))
 					throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FEEDS_URI_INCORRECT));
 				
+				feed_name = RSSTasks.getFeedName(request.uri);
+				
 				PreparedStatement statement = database.connection.prepareStatement("INSERT INTO feeds (feed_link, name) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS);
 				statement.setString( 1, request.uri );
-				statement.setString( 2, request.name );
+				statement.setString( 2, feed_name );
 
 				
 				int status = statement.executeUpdate();
@@ -125,7 +141,10 @@ public class FeedServices {
 				
 			}
 			else
+			{
 				feed_id = iDs.get(0);
+				feed_name = names.get(0);
+			}
 			
 			// On procède au link de la catégorie et du feed.
 			PreparedStatement statement = database.connection.prepareStatement( "SELECT * FROM user_feed WHERE id_feed = ? AND id_user = ?");
@@ -140,10 +159,12 @@ public class FeedServices {
 			
 			if (iDs.size() == 0)
 			{
+				//request.name = RSSTasks.getFeedName(request.uri);
+				
 				statement = database.connection.prepareStatement("INSERT INTO user_feed (id_cat, id_feed, name, id_user) VALUES (?, ?, ?, ?)");
 				statement.setInt( 1, request.id_cat );
 				statement.setInt( 2, feed_id );
-				statement.setString( 3, request.name );
+				statement.setString( 3, feed_name );
 				statement.setInt(4, id_user);
 			
 				int status = statement.executeUpdate();

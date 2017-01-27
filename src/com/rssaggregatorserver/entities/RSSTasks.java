@@ -79,23 +79,53 @@ public class RSSTasks {
 				throw new CustomInternalServerError(Errors.createJSONErrorResponse(ErrorStrings.DATABASE_ERROR_REGISTER_FEEDS));
 			
 		}
-		catch (SQLException e) { throw new CustomInternalServerError(e.getMessage()); }
-		finally { database.Disconnect();}
+		catch (SQLException e) {database.Disconnect(); throw new CustomInternalServerError(e.getMessage()); }
 		
 		
 	}
 	
 	
-	public static int 	  readFeeds(String str, int feed_id)
+	public static String	getFeedName(String str)
 	{
+		String tmp = "";
+		
 		try {
 			URL url = new URL(str);
 			XmlReader xmlReader = null;
+
 			
 				try {
 					xmlReader = new XmlReader(url);
 					SyndFeed feeder = new SyndFeedInput().build(xmlReader);
-					System.out.println("Title Value : " + feeder.getTitle() + " Url : " + feeder.getLink() + " Description :" + feeder.getDescription());
+					
+					tmp = feeder.getTitle();
+					System.out.println(" < " + tmp + ">");
+					
+				} catch (IOException | IllegalArgumentException | FeedException e) { } finally {
+					if (xmlReader != null)
+					 try { xmlReader.close();} catch (IOException ignore) {}
+					else if (xmlReader == null)
+						return (null);
+				}
+				
+		} catch (MalformedURLException e) {
+			throw new CustomBadRequestException(Errors.createJSONErrorResponse(ErrorStrings.REQUEST_FEEDS_URI_MISSING));
+		}
+		
+		return (tmp);
+	}
+	
+	public static int 	  	readFeeds(String str, int feed_id)
+	{
+		
+		try {
+			URL url = new URL(str);
+			XmlReader xmlReader = null;
+
+			
+				try {
+					xmlReader = new XmlReader(url);
+					SyndFeed feeder = new SyndFeedInput().build(xmlReader);
 					
 				      for (Iterator iterator = feeder.getEntries().iterator(); iterator
 				              .hasNext();) 
