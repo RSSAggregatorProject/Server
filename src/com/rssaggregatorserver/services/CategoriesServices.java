@@ -259,6 +259,7 @@ public class CategoriesServices {
 						query_feed_cat.setInt(1, i);
 					
 						ResultSet results_feed_cat = query_feed_cat.executeQuery();
+						int cat_unread = 0;
 						while (results_feed_cat.next())
 						{
 							feedData = null;
@@ -281,6 +282,7 @@ public class CategoriesServices {
 								query_items.setInt(1, feedData.id_feed);
 							
 								ResultSet results_items = query_items.executeQuery();
+								int feed_unread = 0;
 								while (results_items.next())
 								{
 									itemData = null;
@@ -319,12 +321,15 @@ public class CategoriesServices {
 										itemData.read = false;
 										itemData.starred = false;
 									}
-									
+									if (itemData.read == false)
+										feed_unread++;
 									lItemsData.add(itemData);
 								}
 								
 								feedData.items = new CategoriesItemsJSONData[lItemsData.size()];
 								feedData.items = lItemsData.toArray(feedData.items);
+								feedData.unread = feed_unread;
+								cat_unread += feed_unread;
 								lFeedData.add(feedData);
 								
 								lItemsData = new ArrayList<CategoriesItemsJSONData>();
@@ -334,6 +339,7 @@ public class CategoriesServices {
 						}
 						data.feeds = new CategoriesFeedJSONData[lFeedData.size()];
 						data.feeds = lFeedData.toArray(data.feeds);
+						data.unread = cat_unread;
 						lData.add(data);
 						
 						lFeedData = new ArrayList<CategoriesFeedJSONData>();
@@ -457,11 +463,21 @@ class CategoriesFeedJSONData
 	int 						id_feed;
 	String 						name;
 	String						favicon_uri;
+	int							unread;
 	CategoriesItemsJSONData[]	items;
 	
 	public int getId_feed(){
 		return (id_feed);
 	}	
+	
+	public int getUnread(){
+		return (unread);
+	}	
+	
+	public void setUnread(int nb)
+	{
+		unread = nb;
+	}
 	
 	public String getName(){
 		return (name);
@@ -501,8 +517,17 @@ class CategoriesJSONData
 	int 								id_cat;
 	String 								name;
 	//int 			unread;
+	int									unread;
 	CategoriesFeedJSONData[]			feeds;
 	
+	public int getUnread(){
+		return (unread);
+	}	
+	
+	public void setUnread(int nb)
+	{
+		unread = nb;
+	}
 	public int getId_cat(){
 		return (id_cat);
 	}	

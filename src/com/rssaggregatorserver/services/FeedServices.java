@@ -239,7 +239,7 @@ public class FeedServices {
 						PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY date DESC");
 						
 						query_items.setInt(1, i);
-					
+						int unread_feed = 0;
 						ResultSet results_items = query_items.executeQuery();
 						while (results_items.next())
 						{
@@ -279,11 +279,13 @@ public class FeedServices {
 								itemData.read = false;
 								itemData.starred = false;
 							}
-							
+							if (itemData.read == false)
+								unread_feed++;
 							lItemsData.add(itemData);
 						}
 						data.items = new FeedItemsJSONData[lItemsData.size()];
 						data.items = lItemsData.toArray(data.items);
+						data.unread = unread_feed;
 						lData.add(data);
 						
 						lItemsData = new ArrayList<FeedItemsJSONData>();
@@ -356,7 +358,7 @@ public class FeedServices {
 						PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY date DESC");
 						
 						query_items.setInt(1, i);
-					
+						int unread_feed = 0;
 						ResultSet results_items = query_items.executeQuery();
 						while (results_items.next())
 						{
@@ -380,6 +382,8 @@ public class FeedServices {
 							{
 								itemData.read = results_user_items.getBoolean("read_state");
 								itemData.starred = results_user_items.getBoolean("starred");
+								if (itemData.read == false)
+									unread_feed++;
 								lItemsData.add(itemData);
 							}
 							
@@ -387,6 +391,7 @@ public class FeedServices {
 						}
 						data.items = new FeedItemsJSONData[lItemsData.size()];
 						data.items = lItemsData.toArray(data.items);
+						data.unread = unread_feed;
 						lData.add(data);
 						
 						lItemsData = new ArrayList<FeedItemsJSONData>();
@@ -462,6 +467,7 @@ public class FeedServices {
 						query_items.setInt(1, i);
 					
 						ResultSet results_items = query_items.executeQuery();
+						int unread_feed = 0;
 						while (results_items.next())
 						{
 							itemData = null;
@@ -484,7 +490,7 @@ public class FeedServices {
 							{
 								itemData.read = results_user_items.getBoolean("read_state");
 								itemData.starred = results_user_items.getBoolean("starred");
-								lItemsData.add(itemData);
+								
 							}
 							else
 							{
@@ -501,10 +507,13 @@ public class FeedServices {
 								itemData.read = false;
 								itemData.starred = false;
 							}
-
+							if (itemData.read == false)
+								unread_feed++;
+							lItemsData.add(itemData);
 						}
 						data.items = new FeedItemsJSONData[lItemsData.size()];
 						data.items = lItemsData.toArray(data.items);
+						data.unread = unread_feed;
 						lData.add(data);
 						
 						lItemsData = new ArrayList<FeedItemsJSONData>();
@@ -748,12 +757,21 @@ class FeedJSONData
 {
 	int 								id_feed;
 	String 								name;
-	//int 			unread;
+	int 								unread;
 	FeedItemsJSONData[]					items;
 	
 	public int getId_feed(){
 		return (id_feed);
 	}	
+	
+	public int getUnread(){
+		return (unread);
+	}	
+	
+	public void setUnread(int nb)
+	{
+		unread = nb;
+	}
 	
 	public String getName(){
 		return (name);
