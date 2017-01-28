@@ -6,8 +6,9 @@
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
         <init-param>
              <param-name>jersey.config.server.provider.packages</param-name>
-             <param-value>com.rssaggregatorserver.services</param-value>
+             <param-value>com.rssaggregatorserver</param-value>
         </init-param>
+
         <load-on-startup>1</load-on-startup>
     </servlet>
    
@@ -15,4 +16,13 @@
         <servlet-name>jersey-serlvet</servlet-name>
         <url-pattern>/*</url-pattern>
     </servlet-mapping>
+    
+    <filter>
+  	<filter-name>CorsFilter</filter-name>
+  		<filter-class>org.apache.catalina.filters.CorsFilter</filter-class>
+	</filter>
+	<filter-mapping>
+  	<filter-name>CorsFilter</filter-name>
+  		<url-pattern>/*</url-pattern>
+	</filter-mapping>
 </web-app>

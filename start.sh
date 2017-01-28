@@ -1,7 +1,5 @@
 #!/bin/bash 
 
-#package the WAR file
-mvn package
+echo DB_PORT_3306_TCP_ADDR=${DB_PORT_3306_TCP_ADDR} >> /etc/tomcat/tomcat.conf
 
-#run the application
-docker run --rm -p 8080:8080 -v //./target/mywebapp:/usr/local/tomcat/webapps/mywebapp tomcat:9.0
+cat /etc/tomcat/tomcat.conf

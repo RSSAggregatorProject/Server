@@ -52,11 +52,11 @@ public class RSSTasks {
 		
 			database.Connect();
 			
-			PreparedStatement preparedStatement = database.connection.prepareStatement( "SELECT * FROM items WHERE url = ? AND description = ? AND title = ?");
+			PreparedStatement preparedStatement = database.connection.prepareStatement( "SELECT * FROM items WHERE url = ?");
 			
 			preparedStatement.setString(1, url);
-			preparedStatement.setString(2, desc);
-			preparedStatement.setString(3, title);
+			/*preparedStatement.setString(2, desc);
+			preparedStatement.setString(3, title);*/
 			
 			ResultSet results = preparedStatement.executeQuery();
 			

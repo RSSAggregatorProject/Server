@@ -157,7 +157,7 @@ public class CategoriesServices {
 						PreparedStatement query_feed_cat = database.connection.prepareStatement( "Select id_feed from user_feed WHERE id_cat = ? ORDER BY id");
 						
 						query_feed_cat.setInt(1, i);
-					
+						int cat_unread = 0;
 						ResultSet results_feed_cat = query_feed_cat.executeQuery();
 						while (results_feed_cat.next())
 						{
@@ -175,7 +175,44 @@ public class CategoriesServices {
 								feedData.name = results_feed.getString("name");
 								feedData.favicon_uri = "favicon_not_implemented";
 								feedData.id_feed = results_feed.getInt("id");
-						
+								feedData.items = new CategoriesItemsJSONData[0];
+								
+PreparedStatement query_items = database.connection.prepareStatement( "Select * from items WHERE feed_id = ? ORDER BY date DESC");
+								
+								query_items.setInt(1, feedData.id_feed);
+							
+								ResultSet results_items = query_items.executeQuery();
+								int feed_unread = 0;
+								while (results_items.next())
+								{							
+									PreparedStatement query2 = database.connection.prepareStatement( "Select * from user_items WHERE id_item = ? AND id_user = ? ORDER BY id");
+
+									query2.setInt( 1, results_items.getInt("id"));
+									query2.setInt( 2, id_user);
+									ResultSet results_user_items = query2.executeQuery();
+									
+									boolean itemDataRead;
+									if (results_user_items.next())
+										itemDataRead = results_user_items.getBoolean("read_state");
+									else
+									{
+										PreparedStatement query_user_items = database.connection.prepareStatement( "INSERT INTO user_items (id_user, id_item, read_state, starred)"
+																												 + " VALUES (?, ?, ?, ?)");
+
+										query_user_items.setInt( 1, id_user);
+										query_user_items.setInt( 2, results_items.getInt("id"));
+										query_user_items.setBoolean(3, false);
+										query_user_items.setBoolean(4, false);
+										
+										int status = query_user_items.executeUpdate();
+										
+										itemDataRead = false;
+									}
+									if (itemDataRead == false)
+										feed_unread++;
+								}
+								feedData.unread = feed_unread;
+								cat_unread += feed_unread;
 								lFeedData.add(feedData);	
 							}
 							
@@ -183,6 +220,7 @@ public class CategoriesServices {
 						}
 						data.feeds = new CategoriesFeedJSONData[lFeedData.size()];
 						data.feeds = lFeedData.toArray(data.feeds);
+						data.unread = cat_unread;
 						lData.add(data);
 						
 						lFeedData = new ArrayList<CategoriesFeedJSONData>();
@@ -457,6 +495,7 @@ class CategoriesItemsJSONData
 		starred = bool;
 	}
 }
+
 
 class CategoriesFeedJSONData
 {

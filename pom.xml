@@ -85,7 +85,7 @@
    </dependencies>
 
   <build>
-  	<finalName>DreamTeamRssServer</finalName>
+  	<finalName>rssserver</finalName>
     <sourceDirectory>src</sourceDirectory>
     <plugins>
       <plugin>
