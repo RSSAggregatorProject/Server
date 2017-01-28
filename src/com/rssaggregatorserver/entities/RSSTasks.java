@@ -77,13 +77,14 @@ public class RSSTasks {
 			preparedStatement.setString(4, url);
 			preparedStatement.setInt(5, feed_id);
 			int status = preparedStatement.executeUpdate();
+			preparedStatement.close();
 			if (status == 0)
 				throw new CustomInternalServerError(Errors.createJSONErrorResponse(ErrorStrings.DATABASE_ERROR_REGISTER_FEEDS));
 			
 		}
 		catch (SQLException e) {database.Disconnect(); throw new CustomInternalServerError(e.getMessage()); }
 		
-		
+		database.Disconnect();
 	}
 	
 	
