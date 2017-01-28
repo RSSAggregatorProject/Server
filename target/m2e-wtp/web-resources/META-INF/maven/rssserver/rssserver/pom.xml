@@ -5,7 +5,7 @@
   <version>0.0.1-SNAPSHOT</version>
   <packaging>war</packaging>
   <name>rssaggregatorserver</name>
-  
+   
    <dependencies>
 
 
@@ -81,7 +81,13 @@
             <version>1.7.5</version>
         </dependency>
     
-    
+  	<dependency>
+		<groupId>com.jayway.restassured</groupId>
+		<artifactId>rest-assured</artifactId>
+		<version>1.2.3</version>
+	</dependency>
+	
+
    </dependencies>
 
   <build>
@@ -101,6 +107,7 @@
         <version>3.0.0</version>
         <configuration>
           <warSourceDirectory>WebContent</warSourceDirectory>
+          <organizationId>50ec35f1-92ef-4964-ae5f-9c25a9c2dd97</organizationId>
         </configuration>
       </plugin>
     </plugins>

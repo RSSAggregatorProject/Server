@@ -15,14 +15,27 @@ import javax.ws.rs.ext.Provider;
 public class CORSResponseFilter
 implements ContainerResponseFilter {
 
-	public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
+	/*public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
 			throws IOException {
 
 		System.out.println("Ajout du header CORS");
 		MultivaluedMap<String, Object> headers = responseContext.getHeaders();
 
 		headers.add("Access-Control-Allow-Origin", "null");
-		//headers.add("Access-Control-Allow-Origin", "http://podcastpedia.org"); //allows CORS requests only coming from podcastpedia.org		
-	}
+		headers.add("Access-Control-Allow-Header", "Origin, X-Requested-With, Content-Type, Accept, Authorization"); //allows CORS requests only coming from podcastpedia.org
+		headers.add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
+		headers.add("Access-Control-Allow-Credentials", "true");
+	}*/
+	
+	 @Override
+	    public void filter(ContainerRequestContext request,
+	            ContainerResponseContext response) throws IOException {
+	        response.getHeaders().add("Access-Control-Allow-Origin", "*");
+	        response.getHeaders().add("Access-Control-Allow-Headers",
+	                "origin, content-type, accept, authorization");
+	        response.getHeaders().add("Access-Control-Allow-Credentials", "true");
+	        response.getHeaders().add("Access-Control-Allow-Methods",
+	                "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+	    }
 
 }

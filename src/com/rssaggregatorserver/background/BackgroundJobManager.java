@@ -32,7 +32,8 @@ public class BackgroundJobManager implements Job {
     	try {
 
 			database.Connect();
-
+			
+			System.out.println("Background job!");
 			PreparedStatement preparedStatement = database.connection.prepareStatement( "SELECT * FROM feeds");
 			
 			/* Exécution de la requête */
