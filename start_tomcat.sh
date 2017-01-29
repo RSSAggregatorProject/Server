@@ -1,5 +1,6 @@
 #!/bin/bash 
-bdd_path="c:/docker_project/mysql"
+#bdd_path="c:/docker_project/mysql"
+bdd_path="c:/Eclipse/WorkSpace2/rssserver/mysql"
 
 #package the WAR file
 mvn package

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -36,6 +37,7 @@ import com.rssaggregatorserver.exceptions.CustomNotFoundException;
 
 @Path("/users")
 public class UsersServices {
+	
 	
 	@POST
 	@Path("/")
