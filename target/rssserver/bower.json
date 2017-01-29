@@ -1,0 +1,23 @@
+{
+  "name": "rss-feed-aggregator",
+  "description": "RSS Feed Aggregator",
+  "authors": [
+    "Arnaud Letondor <arnaud.letondor@epitech.eu>"
+  ],
+  "license": "UNLICENSED",
+  "homepage": "",
+  "ignore": [
+  "**/.*",
+  "node_modules",
+  "bower_components",
+  "res/libs",
+  "test",
+  "tests"
+  ],
+  "dependencies": {
+    "angular-ui-router": "^0.3.1",
+    "angular-resource": "^1.5.7",
+    "bootstrap": "^3.3.6",
+    "angular-bootstrap": "^2.4.0"
+  }
+}
