@@ -67,7 +67,11 @@ public class RSSTasks {
 				iDs.add(results.getInt("id"));
 			
 			if (iDs.size() > 0)
+			{
+				try { connexion.close(); } catch (SQLException e1) {}
+				System.out.println("Connection Close ! Already Exist !");
 				return ;
+			}
 			
 			preparedStatement.close();
 			preparedStatement = connexion.prepareStatement( "INSERT INTO items (title, description, date, url, feed_id) VALUES (?, ?, ?, ?, ?)");

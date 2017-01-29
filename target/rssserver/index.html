@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+   <meta charset="utf-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <title>RSS Feed Aggregator</title>
+
+   <!-- Bootstrap -->
+   <link href="res/libs/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+   <link href="res/libs/angular-ui-select/dist/select.css" rel="stylesheet">
+   <link href="res/css/style.css" rel="stylesheet">
+
+   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+   <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+   <!--[if lt IE 9]>
+     <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+   <![endif]-->
+ </head>
+
+ <body ng-app="app">
+
+   <div class="col-lg-12 general-container">
+     <div style="height:100%" ui-view></div>
+   </div>
+
+
+
+  <script src="res/libs/jquery/dist/jquery.js"></script>
+  <script src="res/libs/bootstrap/dist/js/bootstrap.js"></script>
+  <script src="res/libs/angular/angular.js"></script>
+  <script src="res/libs/angular-resource/angular-resource.js"></script>
+  <script src="res/libs/angular-ui-select/dist/select.js"></script>
+  <script src="res/libs/angular-ui-router/release/angular-ui-router.js"></script>
+  <script src="res/libs/angular-bootstrap/ui-bootstrap.js"></script>
+  <script src="res/libs/angular-bootstrap/ui-bootstrap-tpls.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/services/authentification.js"></script>
+  <script src="js/services/article.js"></script>
+  <script src="js/services/feed.js"></script>
+  <script src="js/services/category.js"></script>
+  <script src="js/controllers/authentifications.js"></script>
+  <script src="js/controllers/header.js"></script>
+  <script src="js/controllers/reader.js"></script>
+
+ </body>
+
+</html>
