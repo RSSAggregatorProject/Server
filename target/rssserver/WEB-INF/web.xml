@@ -10,7 +10,7 @@
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
         <init-param>
              <param-name>jersey.config.server.provider.packages</param-name>
-             <param-value>com.rssaggregatorserver</param-value>
+             <param-value>io.swagger.jaxrs.listing, com.rssaggregatorserver</param-value>
         </init-param>
 
         <load-on-startup>1</load-on-startup>
@@ -21,7 +21,19 @@
         <url-pattern>/api/*</url-pattern>
     </servlet-mapping>
    
-
+	   <servlet>
+        <servlet-name>Jersey2Config</servlet-name>
+        <servlet-class>io.swagger.jersey.config.JerseyJaxrsConfig</servlet-class>
+        <init-param>
+            <param-name>api.version</param-name>
+            <param-value>1.0.0</param-value>
+        </init-param>
+        <init-param>
+            <param-name>swagger.api.basepath</param-name>
+            <param-value>http://localhost:8080/rssserver/api</param-value>
+        </init-param>
+        <load-on-startup>2</load-on-startup>
+    </servlet>
    
   <filter>
   <filter-name>CorsFilter</filter-name>
@@ -32,11 +44,11 @@
   </init-param>
   <init-param>
     <param-name>cors.allowed.methods</param-name>
-    <param-value>GET,POST,HEAD,OPTIONS,PUT</param-value>
+    <param-value>GET,POST,HEAD,OPTIONS,PUT,DELETE</param-value>
   </init-param>
   <init-param>
-    <param-name>cors.allowed.headers</param-name>
-    <param-value>Content-Type,X-Requested-With,accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers</param-value>
+     <param-name>cors.allowed.headers</param-name>
+        <param-value>Content-Type,X-Requested-With,accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers,Authorization</param-value>
   </init-param>
   <init-param>
     <param-name>cors.exposed.headers</param-name>

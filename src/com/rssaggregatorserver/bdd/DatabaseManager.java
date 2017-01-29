@@ -46,7 +46,7 @@ public class DatabaseManager {
 		String user = DatabaseStrings.DATABASE_USER;
 		String pass = DatabaseStrings.DATABASE_PASS;
 		
-		connection = null;
+		Disconnect();
 		connection = DriverManager.getConnection(url, user, pass);
 	}
 }

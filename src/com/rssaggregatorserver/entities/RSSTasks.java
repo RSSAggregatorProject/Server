@@ -3,6 +3,7 @@ package com.rssaggregatorserver.entities;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,12 +20,14 @@ import javax.ws.rs.container.Suspended;
 
 import org.glassfish.jersey.server.ManagedAsync;
 
+import java.sql.Connection;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 import com.rssaggregatorserver.bdd.DatabaseManager;
+import com.rssaggregatorserver.enums.DatabaseStrings;
 import com.rssaggregatorserver.enums.ErrorStrings;
 import com.rssaggregatorserver.exceptions.CustomBadRequestException;
 import com.rssaggregatorserver.exceptions.CustomInternalServerError;
@@ -44,19 +47,17 @@ public class RSSTasks {
 		String desc = entry.getDescription().getValue();
 		
 		System.out.println("Adding Feeds : " + entry.getTitle() + " " + entry.getPublishedDate());
-		/*System.out.println("Title :" + entry.getTitle());
-		System.out.println("Url :" + entry.getLink());
-		System.out.println("Date :" + entry.getPublishedDate());
-		System.out.println("Description : " + entry.getDescription().getValue());*/
+		
+		Connection connexion = null;
+		
 		try { 
 		
-			database.Connect();
+			//database.Connect();
+			connexion = DriverManager.getConnection(DatabaseStrings.DATABASE_URL, DatabaseStrings.DATABASE_USER, DatabaseStrings.DATABASE_PASS);
 			
-			PreparedStatement preparedStatement = database.connection.prepareStatement( "SELECT * FROM items WHERE url = ?");
+			PreparedStatement preparedStatement = connexion.prepareStatement( "SELECT * FROM items WHERE url = ?");
 			
 			preparedStatement.setString(1, url);
-			/*preparedStatement.setString(2, desc);
-			preparedStatement.setString(3, title);*/
 			
 			ResultSet results = preparedStatement.executeQuery();
 			
@@ -68,7 +69,8 @@ public class RSSTasks {
 			if (iDs.size() > 0)
 				return ;
 			
-			preparedStatement = database.connection.prepareStatement( "INSERT INTO items (title, description, date, url, feed_id) VALUES (?, ?, ?, ?, ?)");
+			preparedStatement.close();
+			preparedStatement = connexion.prepareStatement( "INSERT INTO items (title, description, date, url, feed_id) VALUES (?, ?, ?, ?, ?)");
 			preparedStatement.setString(1, title);
 			preparedStatement.setString(2, desc);
 			
@@ -78,13 +80,21 @@ public class RSSTasks {
 			preparedStatement.setInt(5, feed_id);
 			int status = preparedStatement.executeUpdate();
 			preparedStatement.close();
+			results.close();
+			
 			if (status == 0)
 				throw new CustomInternalServerError(Errors.createJSONErrorResponse(ErrorStrings.DATABASE_ERROR_REGISTER_FEEDS));
 			
 		}
-		catch (SQLException e) {database.Disconnect(); throw new CustomInternalServerError(e.getMessage()); }
-		
-		database.Disconnect();
+		catch (SQLException e) {try { connexion.close(); } catch (SQLException ignore){ } throw new CustomInternalServerError(e.getMessage()); }
+		finally 
+		{
+			try { connexion.close(); } catch (SQLException e1) {}
+			try {
+				if (connexion.isClosed())
+					System.out.println("Connection Close !");
+			} catch (SQLException e) { System.out.println("Not close !"); }
+		}
 	}
 	
 	
